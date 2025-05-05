@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="{{ url_for('static', filename='') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        .header-bar {
+            background-color: #002147;
+            color: #fff;
+            padding: 10px;
+        }
+        .header-bar:nth-child(odd) {
+            background-color: #EAAA00;
+        }
+        .container {
+            width: 300px;
+            margin: 50px auto;
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .logo-container {
+            margin-bottom: 20px;
+        }
+        .logo-container img {
+            width: 100px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;  /* Make sure padding doesn't affect width */
+        }
+        .button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            background-color: #f8f8f8;
+            border: 2px solid #333;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar"></div>
+    <div class="header-bar"></div>
+    
+    <div class="container">
+        <div class="logo-container">
+            <img src="JRU.jpg" alt="University Logo">
+        </div>
+        
+        <h3>Student Login - Jose Rizal University</h3>
+        <form action="{{ url_for('student_login') }}" method="POST">
+            <input type="text" name="student-email" placeholder="Enter Email" required>
+            <input type="password" name="passcode" placeholder="Enter Passcode" required>
+            <button type="submit" class="button">Login</button>
+        </form>
+    </div>
+</body>
+</html>

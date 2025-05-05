@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="{{ url_for('static', filename='') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Reservations</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #e5e5e5;
+}
+
+.header-bar {
+    background-color: #002147;
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    font-size: 20px;
+}
+
+.dashboard-container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #002147;
+    color: #fff;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar img {
+    width: 80px;
+    display: block;
+    margin: 0 auto 20px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 12px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+    margin: 10px 0;
+    border-radius: 5px;
+}
+
+.sidebar a:hover {
+    background-color: #EAAA00;
+}
+.logout-button {
+    padding: 12px;
+    background-color: #002147;
+    color: #fff;
+    border: none;
+    font-size: 18px;
+    width: 100%;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 20px;
+    }
+    .logout-button:hover {
+        background-color: #EAAA00;
+        
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.main-content h3 {
+    background-color: #002147;
+    color: #fff;
+    padding: 15px;
+    font-size: 24px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.request-item {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.request-item.returned {
+    opacity: 0.6;
+}
+
+.request-item p {
+    font-size: 16px;
+    margin: 8px 0;
+}
+
+.request-item button {
+    background-color: #002147;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    margin-right: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.request-item button:hover {
+    background-color: #EAAA00;
+}
+
+/* Badge styles */
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+.status-in {
+    background-color: #28a745;
+}
+.status-out {
+    background-color: #ffc107;
+    color: black;
+}
+.status-returned {
+    background-color: #007bff;
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+    Admin Reservation Management
+</div>
+
+<div class="dashboard-container">
+    <div class="sidebar">
+        <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_equipment') }}">Equipments</a>
+        <a href="{{ url_for('admin_reservation') }}">Reservations</a>
+        <button class="logout-button" onclick="logout()">Log Out</button>
+    </div>
+
+    <div class="main-content">
+        <h3>Reservation Requests</h3>
+        <div id="reservation-requests"></div>
+
+        <h3>Reservation Progress</h3>
+        <div id="reservation-progress"></div>
+    </div>
+</div>
+
+<script>
+let reservationRequests = [
+    { id: 1, studentName: "John Doe", equipment: "Power Supply", quantity: 2, status: "Pending", progressStatus: null },
+    { id: 2, studentName: "Jane Smith", equipment: "Resistors", quantity: 5, status: "Pending", progressStatus: null }
+];
+
+function renderRequests() {
+    const reservationContainer = document.getElementById('reservation-requests');
+    reservationContainer.innerHTML = '';
+    reservationRequests.forEach(request => {
+        if (request.status === "Pending") {
+            const div = document.createElement('div');
+            div.classList.add('request-item');
+            div.innerHTML = `
+                <p><strong>Student:</strong> ${request.studentName}</p>
+                <p><strong>Equipment:</strong> ${request.equipment} (Qty: ${request.quantity})</p>
+                <p><strong>Status:</strong> ${request.status}</p>
+                <button onclick="approveRequest(${request.id})">Approve</button>
+                <button onclick="rejectRequest(${request.id})">Reject</button>
+            `;
+            reservationContainer.appendChild(div);
+        }
+    });
+
+    renderProgress();
+}
+
+function renderProgress() {
+    const progressContainer = document.getElementById('reservation-progress');
+    progressContainer.innerHTML = '';
+    reservationRequests.forEach(request => {
+        if (request.status === "Approved") {
+            const div = document.createElement('div');
+            div.classList.add('request-item');
+            if (request.progressStatus === "Returned") div.classList.add("returned");
+
+            let badgeClass = "";
+            if (request.progressStatus === "In") badgeClass = "status-in";
+            else if (request.progressStatus === "Out") badgeClass = "status-out";
+            else if (request.progressStatus === "Returned") badgeClass = "status-returned";
+
+            let actionButton = '';
+            if (request.progressStatus === "In") {
+                actionButton = `<button onclick="updateProgress(${request.id}, 'Out')">Mark as Out</button>`;
+            } else if (request.progressStatus === "Out") {
+                actionButton = `<button onclick="updateProgress(${request.id}, 'Returned')">Mark as Returned</button>`;
+            }
+
+            div.innerHTML = `
+                <p><strong>Student:</strong> ${request.studentName}</p>
+                <p><strong>Equipment:</strong> ${request.equipment} (Qty: ${request.quantity})</p>
+                <p><strong>Progress Status:</strong> <span class="status-badge ${badgeClass}">${request.progressStatus}</span></p>
+                ${actionButton}
+            `;
+            progressContainer.appendChild(div);
+        }
+    });
+}
+
+function approveRequest(id) {
+    const request = reservationRequests.find(req => req.id === id);
+    if (request) {
+        request.status = "Approved";
+        request.progressStatus = "In";
+        alert(`${request.studentName}'s request has been approved and is now marked as In.`);
+        renderRequests();
+    }
+}
+
+function rejectRequest(id) {
+    const request = reservationRequests.find(req => req.id === id);
+    if (request) {
+        request.status = "Rejected";
+        alert(`${request.studentName}'s request has been rejected.`);
+        renderRequests();
+    }
+}
+
+function updateProgress(id, newStatus) {
+    const request = reservationRequests.find(req => req.id === id);
+    if (request) {
+        request.progressStatus = newStatus;
+        alert(`${request.studentName}'s reservation status updated to "${newStatus}".`);
+        renderRequests();
+    }
+}
+
+        function logout() {
+            alert("Logging out...");
+            window.location.href = "{{ url_for('login') }}";
+        }
+
+
+renderRequests();
+</script>
+
+</body>
+</html>

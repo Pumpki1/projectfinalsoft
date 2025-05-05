@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="{{ url_for('static', filename='') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e5e5e5;
+        }
+        .header-bar {
+            background-color: #002147;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #002147;
+            color: #fff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar img {
+            width: 80px;
+            display: block;
+            margin: 0 auto 20px;
+        }
+        .sidebar a {
+            display: block;
+            padding: 12px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .sidebar a:hover {
+            background-color: #EAAA00;
+        }
+        .logout-button {
+            padding: 12px;
+            background-color: #002147;
+            color: #fff;
+            border: none;
+            font-size: 18px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #EAAA00;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #fff;
+            overflow-y: auto;
+        }
+        .greeting {
+            background-color: #002147;
+            color: #fff;
+            padding: 15px;
+            font-size: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .equipments-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .equipment-item {
+            background-color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .equipment-item img {
+            max-width: 100%;
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .equipment-item input[type="number"] {
+            padding: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .borrow-selected-btn {
+            margin-top: 20px;
+            background-color: #002147;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .borrow-selected-btn:hover {
+            background-color: #EAAA00;
+        }
+        .notifications {
+            width: 250px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            margin-left: 20px;
+            overflow-y: auto;
+        }
+        .notification-item {
+            background-color: #f9f9f9;
+            border-left: 5px solid #ffcc00;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .notification-item .label {
+            font-weight: bold;
+            color: #002147;
+        }
+        .notification-item .status {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 40px auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; max-height: 90%;
+            overflow-y: auto;
+            border-radius: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+  <div class="header-bar">
+    JRU Equipment Dashboard
+  </div>
+
+  <div class="dashboard-container">
+    <div class="sidebar">
+      <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
+      <a href="{{ url_for('student_equipment') }}">Equipments</a>
+      <a href="{{ url_for('student_progress') }}">Progress</a>
+      <button class="logout-button"onclick="window.location.href='{{ url_for('login') }}'"> Log Out </button>
+    </div>
+
+    <div class="main-content">
+      <div class="greeting">
+        Greetings! Welcome to the Equipments Section!
+      </div>
+      <div id="equipments-section">
+        <h3>Available Equipment</h3>
+        <div class="equipments-list">
+          <div class="equipment-item">
+            <p>Quantity: <span id="power-supply-quantity">4</span></p>
+            <img src="power supply.png" alt="Power Supply">
+            <h4>Power Supply</h4>
+            <input type="number" id="power-supply-input" placeholder="Enter Quantity" min="1" max="4">
+          </div>
+          <div class="equipment-item">
+            <p>Quantity: <span id="resistors-quantity">20</span></p>
+            <img src="resistor.png" alt="Resistors">
+            <h4>Resistors</h4>
+            <input type="number" id="resistor-input" placeholder="Enter Quantity" min="1" max="20">
+          </div>
+          <div class="equipment-item">
+            <p>Quantity: <span id="jumper-wires-quantity">20</span></p>
+            <img src="jumper wires.jpg" alt="Jumper Wires">
+            <h4>Jumper Wires</h4>
+            <input type="number" id="jumper-wires-input" placeholder="Enter Quantity" min="1" max="20">
+          </div>
+          <div class="equipment-item">
+            <p>Quantity: <span id="diodes-quantity">20</span></p>
+            <img src="diodes.png" alt="Diodes">
+            <h4>Diodes</h4>
+            <input type="number" id="diodes-input" placeholder="Enter Quantity" min="1" max="20">
+          </div>
+          <div class="equipment-item">
+            <p>Quantity: <span id="capacitors-quantity">20</span></p>
+            <img src="capacitors.png" alt="Capacitors">
+            <h4>Capacitors</h4>
+            <input type="number" id="capacitors-input" placeholder="Enter Quantity" min="1" max="20">
+          </div>
+          <div class="equipment-item">
+            <p>Quantity: <span id="batteries-quantity">10</span></p>
+            <img src="batteries.png" alt="Batteries">
+            <h4>Batteries</h4>
+            <input type="number" id="batteries-input" placeholder="Enter Quantity" min="1" max="10">
+          </div>
+          <div class="equipment-item">
+            <p>Quantity: <span id="bread-board-quantity">5</span></p>
+            <img src="breadboard.png" alt="Bread Board">
+            <h4>Bread Board</h4>
+            <input type="number" id="bread-board-input" placeholder="Enter Quantity" min="1" max="5">
+          </div>
+        </div>
+        <button class="borrow-selected-btn" onclick="borrowSelectedEquipment()">Borrow Selected</button>
+      </div>
+    </div>
+
+    <div class="notifications">
+      <h3>Notifications</h3>
+      <div id="notification-boxes"></div>
+    </div>
+  </div>
+
+  <div id="borrowFormModal" class="modal">
+    <div class="modal-content">
+      <h2>College Laboratory Borrower’s Form</h2>
+      <form id="borrowForm">
+        <div>
+          <label><input type="checkbox" name="lab" value="Electronics"> Electronics</label>
+          <label><input type="checkbox" name="lab" value="Science"> Science</label>
+          <label><input type="checkbox" name="lab" value="Nursing"> Nursing</label>
+          <label><input type="checkbox" name="lab" value="HTM"> HTM</label>
+          <label><input type="checkbox" name="lab" value="Criminology"> Criminology</label>
+        </div>
+        <br>
+        <label>NAME OF STUDENT/FACULTY:
+          <input type="text" name="name" required style="width:60%;">
+        </label><br><br>
+        <label>SUBJECT/SECTION:
+          <input type="text" name="subject" required style="width:60%;">
+        </label><br><br>
+        <label>DATE FILED:
+          <input type="date" name="dateFiled" required>
+        </label><br><br>
+        <label>DATE/TIME NEEDED:
+          <input type="datetime-local" name="dateNeeded" required>
+        </label><br><br>
+
+        <table>
+          <thead><tr><th>ITEM</th><th>QUANTITY</th></tr></thead>
+          <tbody id="borrowedItemsTableBody"></tbody>
+        </table>
+        <br>
+        <button type="submit" style="padding:10px 20px;">Submit</button>
+        <button type="button" onclick="closeBorrowForm()" style="padding:10px 20px;">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function borrowSelectedEquipment() {
+      const inputs = document.querySelectorAll('.equipment-item input[type="number"]');
+      const tableBody = document.getElementById('borrowedItemsTableBody');
+      tableBody.innerHTML = '';
+      inputs.forEach(input => {
+        const qSpan = input.parentElement.querySelector('span');
+        const equipmentName = input.parentElement.querySelector('h4').textContent;
+        const inputValue = parseInt(input.value);
+        const availableQuantity = parseInt(qSpan.textContent);
+        if (inputValue > 0 && inputValue <= availableQuantity) {
+          const row = document.createElement('tr');
+          row.innerHTML = `<td>${equipmentName}</td><td>${inputValue}</td>`;
+          tableBody.appendChild(row);
+        }
+      });
+      if (!tableBody.children.length) {
+        alert("Please enter valid quantities to borrow.");
+        return;
+      }
+      document.getElementById('borrowFormModal').style.display = 'block';
+    }
+
+    document.getElementById('borrowForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const notifications = document.getElementById('notification-boxes');
+      const currentDate = new Date().toLocaleDateString();
+      const name = this.name.value, subject = this.subject.value,
+            dateFiled = this.dateFiled.value, dateNeeded = this.dateNeeded.value;
+      const items = Array.from(document.querySelectorAll('.equipment-item input[type="number"]'))
+        .map(input => ({ name: input.parentElement.querySelector('h4').textContent,
+                         qty: parseInt(input.value) }))
+        .filter(i => i.qty > 0);
+      let borrowed = JSON.parse(localStorage.getItem('borrowedItems')||'[]');
+      items.forEach(i => {
+        borrowed.push({ equipmentName: i.name, quantity: i.qty,
+                        status: 'Pending approval', dateBorrowed: currentDate });
+        const span = document.getElementById(i.name.toLowerCase().replace(/ /g,'-')+'-quantity');
+        span.textContent = parseInt(span.textContent) - i.qty;
+      });
+      localStorage.setItem('borrowedItems', JSON.stringify(borrowed));
+      const note = document.createElement('div');
+      note.className = 'notification-item';
+      note.innerHTML = `
+        <span class="label">Borrow Request from ${name}</span>
+        <p>Subject: ${subject} | Date Filed: ${dateFiled} | Date Needed: ${dateNeeded}</p>
+        <ul>${items.map(i=>`<li>${i.name} (Quantity: ${i.qty})</li>`).join('')}</ul>
+        <span class="status">Status: Pending approval</span>`;
+      note.addEventListener('click',()=>alert(note.textContent));
+      notifications.appendChild(note);
+      document.getElementById('borrowFormModal').style.display='none';
+      alert("Borrow request submitted!");
+    });
+
+    function closeBorrowForm() {
+      document.getElementById('borrowFormModal').style.display = 'none';
+    }
+
+  function logout() {
+    alert("Logging out...");
+    window.location.href = "{{ url_for('login') }}";
+  }
+</script>
+</body>
+</html>

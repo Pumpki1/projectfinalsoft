@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="{{ url_for('static', filename='') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Equipments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e5e5e5;
+        }
+        .header-bar {
+            background-color: #002147;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #002147;
+            color: #fff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar img {
+            width: 80px;
+            display: block;
+            margin: 0 auto 20px;
+        }
+        .sidebar a {
+            display: block;
+            padding: 12px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .sidebar a:hover {
+            background-color: #EAAA00;
+        }
+        .logout-button {
+            padding: 12px;
+            background-color: #002147;
+            color: #fff;
+            border: none;
+            font-size: 18px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #EAAA00;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .greeting {
+            background-color: #002147;
+            color: #fff;
+            padding: 15px;
+            font-size: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .equipment-management {
+            display: flex;
+            flex-direction: column;
+        }
+        .equipment-item {
+            background-color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .equipment-item button {
+            background-color: #002147;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .equipment-item button:hover {
+            background-color: #EAAA00;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        Admin Equipment Dashboard
+    </div>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
+            <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_equipment') }}">Equipments</a>
+            <a href="{{ url_for('admin_reservation') }}">Reservations</a>
+            <button class="logout-button" onclick="logout()">Log Out</button>
+        </div>
+
+        <div class="main-content">
+            <div class="greeting">
+                Manage Equipments
+            </div>
+
+            <div class="equipment-management">
+                <h3>Manage Equipments</h3>
+                <div class="equipment-item">
+                    <h4>Add Equipment</h4>
+                    <input type="text" id="new-equipment-id" placeholder="Equipment ID">
+                    <input type="text" id="new-equipment-name" placeholder="Equipment Name">
+                    <input type="number" id="new-equipment-quantity" placeholder="Quantity">
+                    <button onclick="addEquipment()">Add Equipment</button>
+                </div>
+
+                <div class="equipment-item">
+                    <h4>Remove Equipment</h4>
+                    <input type="text" id="remove-equipment-id" placeholder="Equipment ID">
+                    <button onclick="removeEquipment()">Remove Equipment</button>
+                </div>
+
+                <div class="equipment-item">
+                    <h4>Equipment Inventory</h4>
+                    <ul id="equipment-list">
+                        <!-- Equipment List will be dynamically populated -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+        let equipmentList = JSON.parse(localStorage.getItem('equipmentList')) || [];
+
+        function addEquipment() {
+            const id = document.getElementById('new-equipment-id').value;
+            const name = document.getElementById('new-equipment-name').value;
+            const quantity = parseInt(document.getElementById('new-equipment-quantity').value);
+
+            if (id && name && !isNaN(quantity) && quantity >= 0) {
+                // Check if equipment already exists
+                const existingIndex = equipmentList.findIndex(item => item.id === id);
+                if (existingIndex !== -1) {
+                    // If it exists, increase the quantity
+                    equipmentList[existingIndex].quantity += quantity;
+                } else {
+                    // Otherwise, add a new equipment item
+                    equipmentList.push({ id, name, quantity });
+                }
+                saveAndUpdate();
+                alert('Equipment added successfully!');
+            } else {
+                alert('Please fill in all fields correctly, especially the quantity.');
+            }
+        }
+
+        function removeEquipment() {
+            const id = document.getElementById('remove-equipment-id').value;
+            if (id) {
+                // Filter out the equipment with the given ID
+                equipmentList = equipmentList.filter(equipment => equipment.id !== id);
+                saveAndUpdate();
+                alert('Equipment removed successfully!');
+            } else {
+                alert('Please enter an equipment ID to remove.');
+            }
+        }
+
+        // Function to update the equipment list UI
+        function updateEquipmentList() {
+            const equipmentListElement = document.getElementById('equipment-list');
+            equipmentListElement.innerHTML = '';
+
+            // Sort the equipment list by ID
+            equipmentList.sort((a, b) => {
+                if (!a.id || !b.id) return 0; // If either ID is missing, do not sort
+                return a.id.localeCompare(b.id);
+            });
+
+            // Create list items for each equipment
+            equipmentList.forEach(equipment => {
+                const li = document.createElement('li');
+                li.textContent = `ID: ${equipment.id} - ${equipment.name} - Quantity: ${equipment.quantity}`;
+                equipmentListElement.appendChild(li);
+            });
+        }
+
+        // Function to save the equipment list to localStorage and update the UI
+        function saveAndUpdate() {
+            localStorage.setItem('equipmentList', JSON.stringify(equipmentList));
+            updateEquipmentList();
+        }
+
+        function logout() {
+            alert("Logging out...");
+            window.location.href = "{{ url_for('login') }}";
+        }
+
+        // Initialize display when the page loads
+        document.addEventListener('DOMContentLoaded', updateEquipmentList);
+        
+    </script>
+
+</body>
+</html>

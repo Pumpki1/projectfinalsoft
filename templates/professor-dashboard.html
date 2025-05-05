@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="{{ url_for('static', filename='') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e5e5e5;
+        }
+        .header-bar {
+            background-color: #002147;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #002147;
+            color: #fff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar img {
+            width: 80px;
+            display: block;
+            margin: 0 auto 20px;
+        }
+        .sidebar a {
+            display: block;
+            padding: 12px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .sidebar a:hover,
+        .sidebar a:focus {
+            background-color: #EAAA00;
+            outline: none;
+        }
+        .logout-button {
+            padding: 12px;
+            background-color: #002147;
+            color: #fff;
+            border: none;
+            font-size: 18px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .logout-button:hover,
+        .logout-button:focus {
+            background-color: #EAAA00;
+            outline: none;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .main-left {
+            width: 100%;
+            text-decoration: none;
+        }
+        .greeting {
+            background-color: #002147;
+            color: #fff;
+            padding: 15px;
+            font-size: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-decoration: none;
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        Professor Dashboard
+    </div>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
+            <a href="{{ url_for('professor_dashboard') }}">Dashboard</a>
+            <button class="logout-button" onclick="logout()">Log Out</button>
+        </div>
+
+        <div class="main-content">
+            <div class="main-left">
+                <div class="greeting">
+                    Welcome to the Professor Dashboard!
+                </div>
+                <!-- Professor-specific content here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            alert("Logging out...");
+            window.location.href = "{{ url_for('login') }}";
+        }
+    </script>
+</body>
+</html>

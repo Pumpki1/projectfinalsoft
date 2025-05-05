@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="{{ url_for('static', filename='') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e5e5e5;
+        }
+        .header-bar {
+            background-color: #002147;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #002147;
+            color: #fff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar img {
+            width: 80px;
+            display: block;
+            margin: 0 auto 20px;
+        }
+        .sidebar a {
+            display: block;
+            padding: 12px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .sidebar a:hover {
+            background-color: #EAAA00;
+        }
+        .logout-button {
+            padding: 12px;
+            background-color: #002147;
+            color: #fff;
+            border: none;
+            font-size: 18px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .logout-button:hover {
+            background-color: #EAAA00;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+        }
+        .main-left {
+            flex-grow: 1;
+        }
+        .greeting {
+            background-color: #002147;
+            color: #fff;
+            padding: 15px;
+            font-size: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .equipments-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            grid-template-rows: auto;
+        }
+        .equipment-item {
+            background-color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .equipment-item img {
+            max-width: 100%;
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .equipment-item input[type="number"] {
+            padding: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .equipment-item input[type="checkbox"] {
+            margin-top: 10px;
+        }
+        .equipment-item label {
+            display: block;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        /* Notifications Section */
+        .notifications {
+            width: 250px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            margin-left: 20px;
+        }
+        .notification-item {
+            background-color: #f9f9f9;
+            border-left: 5px solid #ffcc00;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .notification-item .label {
+            font-weight: bold;
+            color: #002147;
+        }
+        .notification-item .status {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        Admin Dashboard
+    </div>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
+            <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_equipment') }}">Equipments</a>
+            <a href="{{ url_for('admin_reservation') }}">Reservations</a>
+            <button class="logout-button" onclick="logout()">Log Out</button>
+        </div>
+
+        <div class="main-content">
+            <div class="main-left">
+                <div class="greeting">
+                    Welcome to the Admin Dashboard!
+                </div>
+
+                <div id="equipments-section">
+                    <h3>Available Equipment</h3>
+                    <div class="equipments-list" id="equipments-list">
+                        <!-- Equipment list will be dynamically populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Section -->
+            <div class="notifications">
+                <h3>Notifications</h3>
+                <div id="notification-boxes">
+                    <div class="notification-item">
+                        <p class="label">New Equipment Added</p>
+                        <p class="status">Pending Approval</p>
+                    </div>
+                    <div class="notification-item">
+                        <p class="label">Reservation Confirmation</p>
+                        <p class="status">Approved</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to update the equipment list
+        function updateEquipmentList() {
+            const equipmentList = JSON.parse(localStorage.getItem('equipmentList')) || [];
+            const equipmentListElement = document.getElementById('equipments-list');
+            equipmentListElement.innerHTML = ''; // Clear the existing list
+
+            equipmentList.forEach(equipment => {
+                const equipmentItem = document.createElement('div');
+                equipmentItem.classList.add('equipment-item');
+
+                const equipmentHTML = `
+                    <p>Quantity: <span>${equipment.quantity}</span></p>
+                    <img src="${equipment.id}.png" alt="${equipment.name}">
+                    <h4>${equipment.name}</h4>
+                `;
+
+                equipmentItem.innerHTML = equipmentHTML;
+                equipmentListElement.appendChild(equipmentItem);
+            });
+        }
+
+        // Call the function to update the list when the page loads
+        document.addEventListener('DOMContentLoaded', updateEquipmentList);
+
+        function logout() {
+            alert("Logging out...");
+            window.location.href = "{{ url_for('login') }}";
+        }
+    </script>
+</body>
+</html>
