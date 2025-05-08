@@ -27,29 +27,28 @@ def login():
 @app.route('/student-login', methods=['GET', 'POST'])
 def student_login():
     if request.method == 'POST':
-        student_email = request.form['student-email'].strip()
+        student_id = request.form['student-ID'].strip()  # Changed from 'student-email' to 'student-ID'
         passcode = request.form['passcode'].strip()
 
-        if student_email and passcode:
-            # First verify the student exists in the database
+        if student_id and passcode:
+            # Validate student credentials in your database
             student = supabase.table('students')\
                 .select('*')\
-                .eq('email', student_email)\
-                .execute()\
-                .data
+                .eq('id', student_id)\
+                .execute()
             
-            if student and len(student) > 0:
-                # Store student email in session for later use
-                session['student_email'] = student_email
-                
-                # Redirect to student equipment page
-                return redirect(url_for('student_equipment'))
+            # Check if student exists and password matches
+            if student.data and len(student.data) > 0:
+                # Store student ID in session for future requests
+                session['student_id'] = student_id
+                return redirect(url_for('student_equipment', student_id=student_id))
             else:
-                return "Invalid student email or passcode.", 401
+                return "Invalid student ID or passcode", 400
         else:
-            return "Please enter both Student Email and Passcode.", 400
+            return "Please enter both Student ID and Passcode.", 400
 
-    return render_template('student-alogin.html')
+    return render_template('student-alogin.html') 
+
 
 @app.route('/professor-login', methods=['GET', 'POST'])
 def professor_login():
@@ -82,25 +81,21 @@ def admin_login():
 
 @app.route('/student-equipment')
 def student_equipment():
-    # Get the current student's email from session
-    student_email = session.get('student_email')
+    # Get student ID from session or query parameter
+    student_id = session.get('student_id') or request.args.get('student_id')
     
-    if not student_email:
-        # If no student is logged in, redirect to login page
+    if not student_id:
         return redirect(url_for('student_login'))
 
-    # Get all equipment from inventory
     inventory = supabase.table('inventory')\
         .select('*')\
         .execute()\
         .data
 
-    # Get only the requests submitted by this student
     notifications = (
         supabase
           .table('borrowed_requests')
           .select('*, borrowed_items(*)')
-          .eq('student_email', student_email)  # Filter by student email
           .order('date_filed', desc=True)
           .limit(10)
           .execute()
@@ -111,9 +106,8 @@ def student_equipment():
         'student-equipments.html',
         equipments=inventory,
         notifications=notifications,
-        student_email=student_email
+        student_id=student_id
     )
-
 
 
 @app.route('/submit-borrow-request', methods=['POST'])
@@ -161,18 +155,28 @@ def submit_borrow_request():
 
 @app.route('/student-progress')
 def student_progress():
-    student_id = session.get('student_id')  # or however you track
+    # Get student ID from session or query parameter
+    student_id = session.get('student_id') or request.args.get('student_id')
+    
+    if not student_id:
+        return redirect(url_for('student_login'))
+    
     return render_template('student-progressreport.html', student_id=student_id)
 
-
 @app.route('/api/student-requests/<student_id>')
-def student_requests(student_id):
-    data = supabase.table('borrowed_requests') \
-                   .select('id, laboratory, student_name, faculty_name, subject, section, date_filed, status_professor, status_admin') \
-                   .eq('student_id', student_id) \
-                   .order('date_filed', desc=True) \
-                   .execute().data
-    return jsonify(data)
+def get_student_requests(student_id):
+    """API endpoint to fetch requests for a specific student"""
+    try:
+        # Query requests for the specific student
+        requests = supabase.table('borrowed_requests')\
+            .select('*')\
+            .eq('student_id', student_id)\
+            .order('date_filed', desc=True)\
+            .execute()
+        
+        return jsonify(requests.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 

@@ -22,7 +22,8 @@
         .dashboard-container {
             display: flex;
             height: 100vh;
-        }
+            overflow: hidden; /* Prevents overall page overflow */
+    }
         .sidebar {
             width: 250px;
             background-color: #002147;
@@ -55,7 +56,11 @@
             flex-grow: 1;
             padding: 20px;
             background-color: #fff;
+            overflow-y: auto; /* Makes content scrollable if it overflows */
+            max-height: 100vh; /* Prevents it from exceeding the screen */
+            box-sizing: border-box; /* Ensures padding doesn't add extra height */
         }
+
         .greeting {
             background-color: #002147;
             color: #fff;
@@ -103,81 +108,186 @@
             <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
             <a href="{{ url_for('student_equipment', student_id=student_id) }}">Equipments</a>
             <a href="{{ url_for('student_progress', student_id=student_id) }}">Progress</a>
-            <button class="logout-button" onclick="logout()">Log Out</button>
+            <button class="logout-button" onclick="window.location.href='{{ url_for('login') }}'">Log Out</button>
         </div>
         <div class="main-content">
             <div class="greeting">Greetings! Welcome to the Progress Section!</div>
             <div id="progress-section">
                 <h3>Professor Approval</h3>
-                <div class="progress-list" id="professor-approval-list"></div>
+                <div class="progress-list" id="professor-approval-list">
+                    <div class="loading">Loading...</div>
+                </div>
                 <h3>Admin Approval</h3>
-                <div class="progress-list" id="admin-approval-list"></div>
-                <button class="logout-button" onclick="clearProgress()">Clear Progress</button>
+                <div class="progress-list" id="admin-approval-list">
+                    <div class="loading">Loading...</div>
+                </div>
             </div>
         </div>
     </div>
 
+
     <script>
         const studentId = '{{ student_id }}';
+        const modal = document.getElementById('request-modal');
         
-        // Fetch from backend, fallback to localStorage
+        // Fetch requests for the student from backend
         async function fetchRequests() {
             try {
-                const res = await fetch(`/api/student-requests/${studentId}`);
-                if (!res.ok) throw new Error('Network response was not ok');
-                const data = await res.json();
-                if (data.length) return data;
-            } catch (e) {
-                console.warn('Backend fetch failed, using localStorage', e);
-            }
-            return JSON.parse(localStorage.getItem('borrowedItems')) || [];
-        }
-
-        function renderRequest(req, stage) {
-            const el = document.createElement('div');
-            el.className = 'progress-item';
-            let html = `<h4>Request #${req.id || ''} - ${req.laboratory || req.equipmentName}</h4>`;
-            if (req.student_name) html += `<p><strong>Student:</strong> ${req.student_name}</p>`;
-            html += `<p><strong>${stage==='professor'?'Filed':'Date Borrowed'}:</strong> ${req.date_filed||req.dateBorrowed}</p>`;
-            html += `<p><strong>Subject/Qty:</strong> ${req.subject||''} ${req.section?`(${req.section})`:''}${req.quantity?` Qty:${req.quantity}`:''}</p>`;
-            html += `<p><strong>Status:</strong> <span class="status">${stage==='professor'?req.status_professor:req.status_admin||req.status}</span></p>`;
-            if (stage==='admin' && req.status_professor) html = `<p><strong>Professor:</strong> <span class="status">${req.status_professor}</span></p>` + html;
-            el.innerHTML = html;
-            el.onclick = () => showRequestDetails(req);
-            return el;
-        }
-
-        window.onload = async () => {
-            const reqs = await fetchRequests();
-            const profList = document.getElementById('professor-approval-list');
-            const adminList = document.getElementById('admin-approval-list');
-
-            if (!reqs.length) {
-                profList.innerHTML = '<p>No requests found.</p>';
-                adminList.innerHTML = '<p>No requests found.</p>';
-                return;
-            }
-            reqs.forEach(req => {
-                profList.appendChild(renderRequest(req, 'professor'));
-                if (req.status_professor==='approved') {
-                    adminList.appendChild(renderRequest(req, 'admin'));
+                const response = await fetch(`/api/student-requests/${studentId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 }
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching request data:', error);
+                return [];
+            }
+        }
+
+        // Create a request card
+        function createRequestCard(request, stage) {
+            const card = document.createElement('div');
+            card.className = 'progress-item';
+            
+            // Get the appropriate status based on stage
+            const status = stage === 'professor' ? request.status_professor : request.status_admin;
+            const statusClass = `status-${status || 'pending'}`;
+            
+            card.innerHTML = `
+                <h4>Request #${request.id} - ${request.laboratory}</h4>
+                <p><strong>Student:</strong> ${request.student_name}</p>
+                <p><strong>Filed on:</strong> ${formatDate(request.date_filed)}</p>
+                <p><strong>Subject:</strong> ${request.subject} (${request.section})</p>
+                <p><strong>Status:</strong> <span class="status ${statusClass}">${status || 'pending'}</span></p>
+            `;
+            
+            card.addEventListener('click', () => showRequestDetails(request));
+            return card;
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
             });
+        }
+
+        // Show request details in modal
+        function showRequestDetails(request) {
+            const content = document.getElementById('request-details-content');
+            
+            content.innerHTML = `
+                <div class="request-details">
+                    <div class="detail-row">
+                        <div class="detail-label">Request ID:</div>
+                        <div>${request.id}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Laboratory:</div>
+                        <div>${request.laboratory}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Student Name:</div>
+                        <div>${request.student_name}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Faculty Name:</div>
+                        <div>${request.faculty_name}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Subject:</div>
+                        <div>${request.subject}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Section:</div>
+                        <div>${request.section}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Date Filed:</div>
+                        <div>${formatDate(request.date_filed)}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Date Needed:</div>
+                        <div>${formatDate(request.date_needed)}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Professor Status:</div>
+                        <div class="status status-${request.status_professor || 'pending'}">${request.status_professor || 'pending'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Admin Status:</div>
+                        <div class="status status-${request.status_admin || 'pending'}">${request.status_admin || 'pending'}</div>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        // Close the modal
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside the content
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
         };
 
-        function showRequestDetails(item) {
-            alert(Object.entries(item).map(([k,v])=>`${k}: ${v}`).join('\n'));
-        }
+        // Load requests when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            const professorList = document.getElementById('professor-approval-list');
+            const adminList = document.getElementById('admin-approval-list');
+            
+            // Clear loading indicators
+            professorList.innerHTML = '';
+            adminList.innerHTML = '';
+            
+            const requests = await fetchRequests();
+            
+            if (requests.length === 0) {
+                professorList.innerHTML = '<div class="empty-state">No requests found for this student.</div>';
+                adminList.innerHTML = '<div class="empty-state">No requests found for this student.</div>';
+                return;
+            }
+            
+            let professorRequestsAdded = 0;
+            let adminRequestsAdded = 0;
+            
+            requests.forEach(request => {
+                // All requests go to professor section
+                professorList.appendChild(createRequestCard(request, 'professor'));
+                professorRequestsAdded++;
+                
+                // Only approved professor requests go to admin section
+                if (request.status_professor === 'approved') {
+                    adminList.appendChild(createRequestCard(request, 'admin'));
+                    adminRequestsAdded++;
+                }
+            });
+            
+            if (professorRequestsAdded === 0) {
+                professorList.innerHTML = '<div class="empty-state">No requests found for this student.</div>';
+            }
+            
+            if (adminRequestsAdded === 0) {
+                adminList.innerHTML = '<div class="empty-state">No requests with professor approval found.</div>';
+            }
+        });
 
-        function clearProgress() {
-            localStorage.removeItem('borrowedItems');
-            document.getElementById('professor-approval-list').innerHTML = '<p>No requests found.</p>';
-            document.getElementById('admin-approval-list').innerHTML = '<p>No requests found.</p>';
-        }
-
+        // Logout function
         function logout() {
-            alert('Logging out...');
-            window.location.href = '{{ url_for('login') }}';
+            // Clear any session data in localStorage
+            localStorage.removeItem('borrowedItems');
+            
+            // Redirect to login page
+            window.location.href = '{{ url_for("student_login") }}';
         }
     </script>
 </body>
