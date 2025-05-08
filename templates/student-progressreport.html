@@ -130,14 +130,19 @@
         const studentId = '{{ student_id }}';
         const modal = document.getElementById('request-modal');
         
-        // Fetch requests for the student from backend
+
         async function fetchRequests() {
             try {
+                // Log the student ID to verify we're using the correct one
+                console.log('Fetching requests for student ID:', studentId);
+        
                 const response = await fetch(`/api/student-requests/${studentId}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-                return await response.json();
+                const data = await response.json();
+                console.log('Fetched data:', data); // Log the data for debugging
+                return data;
             } catch (error) {
                 console.error('Error fetching request data:', error);
                 return [];

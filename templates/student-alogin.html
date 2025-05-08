@@ -1,6 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+  <meta charset="UTF-8">
+  <title>Student Login</title>
+  <head>
+    <base href="{{ url_for('static', filename='') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Login</title>
@@ -34,7 +38,7 @@
         .logo-container img {
             width: 100px;
         }
-        input[type="text"], input[type="password"], input[type="email"] {
+        input[type="text"], input[type="password"] {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -56,86 +60,37 @@
         .button:hover {
             background-color: #ddd;
         }
-        .create-account-btn {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            font-size: 14px;
-            background-color: #f8f8f8;
-            border: 1px solid #333;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .create-account-btn:hover {
-            background-color: #ddd;
-        }
-        
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-        }
-        
-        .modal-content {
-            background-color: #f8f8f8;
-            margin: 10% auto;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-            width: 350px;
-        }
-        
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        .modal-title {
-            margin-top: 0;
-            color: #002147;
-        }
-        
-        .error-message {
-            color: red;
-            font-size: 14px;
-            margin-top: 5px;
-            display: none;
-        }
-        
-        .success-message {
-            color: green;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-        }
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 300px;
+        border-radius: 10px;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close:hover, .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
     </style>
+  </head>
 </head>
 <body>
     <div class="header-bar"></div>
@@ -147,186 +102,108 @@
         </div>
         
         <h3>Student Login - Jose Rizal University</h3>
-        <form id="loginForm" onsubmit="return handleLogin(event)">
-            <input type="text" id="loginId" name="student-ID" placeholder="Enter ID" required>
-            <input type="password" id="loginPassword" name="passcode" placeholder="Enter Passcode" required>
-            <div id="loginErrorMessage" class="error-message"></div>
-            <button type="submit" class="button">Login</button>
-        </form>
-        
-        <button id="createAccountBtn" class="create-account-btn">Create Account</button>
+  <!-- Existing login form -->
+  <form id="login-form">
+    <label for="login-username">Username:</label>
+    <input type="text" id="login-username" name="username" required>
+    <label for="login-password">Password:</label>
+    <input type="password" id="login-password" name="password" required>
+    <button type="submit">Login</button>
+  </form>
+  
+  <!-- Register button that opens the modal -->
+  <button id="open-register-btn">Register</button>
+
+  <!-- The Modal -->
+  <div id="register-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Register New Student</h3>
+      <form id="register-form">
+        <label for="student-id">ID:</label>
+        <input type="text" id="student-id" name="id" required>
+        <label for="student-name">Name:</label>
+        <input type="text" id="student-name" name="name" required>
+        <label for="student-section">Section:</label>
+        <input type="text" id="student-section" name="section" required>
+        <label for="student-password">Password:</label>
+        <input type="password" id="student-password" name="password" required>
+        <button type="submit">Submit Registration</button>
+      </form>
+      <p id="register-message" class="message"></p>
     </div>
-    
-    <!-- The Modal -->
-    <div id="registrationModal" class="modal">
-        <!-- Modal content -->
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3 class="modal-title">Create New Student Account</h3>
-            <form id="registrationForm" onsubmit="return handleRegistration(event)">
-                <div class="form-group">
-                    <label for="studentName">Full Name:</label>
-                    <input type="text" id="studentName" name="name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="studentSection">Section:</label>
-                    <input type="text" id="studentSection" name="section" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="studentEmail">Email:</label>
-                    <input type="email" id="studentEmail" name="email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="studentPasscode">Create Passcode:</label>
-                    <input type="password" id="studentPasscode" name="passcode" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirmPasscode">Confirm Passcode:</label>
-                    <input type="password" id="confirmPasscode" name="confirm_passcode" required>
-                </div>
-                
-                <div id="registrationErrorMessage" class="error-message"></div>
-                <div id="registrationSuccessMessage" class="success-message"></div>
-                <button type="submit" class="button">Register</button>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Supabase JS Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
-        // Initialize the Supabase client
-        const supabaseUrl = 'YOUR_SUPABASE_URL';
-        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-        
-        // Get the modal
-        var modal = document.getElementById("registrationModal");
-        
-        // Get the button that opens the modal
-        var btn = document.getElementById("createAccountBtn");
-        
-        // Get the <span> element that closes the modal
-        var span = document.getElementsByClassName("close")[0];
-        
-        // When the user clicks the button, open the modal 
-        btn.onclick = function() {
-            modal.style.display = "block";
+  </div>
+
+  <!-- JavaScript to handle modal and form submission -->
+  <script>
+
+document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault(); // Stop the form from submitting normally
+    window.location.href = '/student-equipment'; // Redirect immediately
+  });
+
+    // Get modal and related elements
+    const modal = document.getElementById('register-modal');
+    const openBtn = document.getElementById('open-register-btn');
+    const closeBtn = document.getElementsByClassName('close')[0];
+    const registerForm = document.getElementById('register-form');
+    const messageP = document.getElementById('register-message');
+
+    // Show modal when register button is clicked
+    openBtn.onclick = function() {
+      modal.style.display = 'block';
+      messageP.textContent = ''; // clear any previous message
+    };
+
+    // Hide modal when 'x' is clicked
+    closeBtn.onclick = function() {
+      modal.style.display = 'none';
+    };
+
+    // Hide modal when clicking outside the modal content
+    window.onclick = function(event) {
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+
+    // Handle form submission
+    registerForm.onsubmit = async function(event) {
+      event.preventDefault(); // prevent normal form submission
+      // Basic validation (HTML 'required' covers empty checks; optionally add extra checks)
+      const id = document.getElementById('student-id').value.trim();
+      const name = document.getElementById('student-name').value.trim();
+      const section = document.getElementById('student-section').value.trim();
+      const password = document.getElementById('student-password').value;
+      if (!id || !name || !section || !password) {
+        messageP.textContent = 'All fields are required.';
+        messageP.style.color = 'red';
+        return;
+      }
+      // Prepare data to send (we do not send password to save it)
+      const data = { id: id, name: name, section: section };
+      try {
+        // Send POST request to /register route with JSON data
+        const response = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.success) {
+          messageP.textContent = result.message;
+          messageP.style.color = 'green';
+          // Optionally, clear form fields or close modal after success
+          registerForm.reset();
+        } else {
+          messageP.textContent = 'Error: ' + result.message;
+          messageP.style.color = 'red';
         }
-        
-        // When the user clicks on <span> (x), close the modal
-        span.onclick = function() {
-            modal.style.display = "none";
-        }
-        
-        // When the user clicks anywhere outside of the modal, close it
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
-        
-        // Handle login form submission
-        async function handleLogin(event) {
-            event.preventDefault();
-            
-            const studentId = document.getElementById("loginId").value;
-            const password = document.getElementById("loginPassword").value;
-            const errorMessage = document.getElementById("loginErrorMessage");
-            
-            try {
-                // Use Supabase auth to sign in
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: studentId + "@example.com", // Using ID as email with domain
-                    password: password
-                });
-                
-                if (error) throw error;
-                
-                // Redirect to dashboard or homepage after successful login
-                alert("Login successful!");
-                // window.location.href = "dashboard.html";
-                
-            } catch (error) {
-                errorMessage.textContent = "Invalid credentials. Please try again.";
-                errorMessage.style.display = "block";
-                console.error("Login error:", error);
-            }
-        }
-        
-        // Handle registration form submission
-        async function handleRegistration(event) {
-            event.preventDefault();
-            
-            const name = document.getElementById("studentName").value;
-            const section = document.getElementById("studentSection").value;
-            const email = document.getElementById("studentEmail").value;
-            const password = document.getElementById("studentPasscode").value;
-            const confirmPassword = document.getElementById("confirmPasscode").value;
-            const errorMessage = document.getElementById("registrationErrorMessage");
-            const successMessage = document.getElementById("registrationSuccessMessage");
-            
-            // Reset messages
-            errorMessage.style.display = "none";
-            successMessage.style.display = "none";
-            
-            // Simple validation
-            if (password !== confirmPassword) {
-                errorMessage.textContent = "Passcodes do not match!";
-                errorMessage.style.display = "block";
-                return false;
-            }
-            
-            try {
-                // First, create the auth user
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: {
-                        data: {
-                            full_name: name
-                        }
-                    }
-                });
-                
-                if (authError) throw authError;
-                
-                // Then, insert student data into our custom table
-                const { data, error } = await supabase
-                    .from('students')
-                    .insert([
-                        { 
-                            name: name, 
-                            section: section,
-                            user_id: authData.user.id  // Link to auth user
-                        }
-                    ]);
-                
-                if (error) throw error;
-                
-                // Show success message
-                successMessage.textContent = "Account created successfully! You can now log in.";
-                successMessage.style.display = "block";
-                
-                // Clear form
-                document.getElementById("registrationForm").reset();
-                
-                // Close modal after 3 seconds
-                setTimeout(() => {
-                    modal.style.display = "none";
-                }, 3000);
-                
-            } catch (error) {
-                errorMessage.textContent = "Error creating account: " + error.message;
-                errorMessage.style.display = "block";
-                console.error("Registration error:", error);
-            }
-        }
-    </script>
+      } catch (error) {
+        messageP.textContent = 'Request failed: ' + error;
+        messageP.style.color = 'red';
+      }
+    };
+  </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session 
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash 
 from supabase import create_client, Client
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -23,31 +23,78 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
 
 @app.route('/student-login', methods=['GET', 'POST'])
 def student_login():
     if request.method == 'POST':
-        student_id = request.form['student-ID'].strip()  # Changed from 'student-email' to 'student-ID'
-        passcode = request.form['passcode'].strip()
+        # 1. Clear previous session data
+        session.clear()
 
-        if student_id and passcode:
-            # Validate student credentials in your database
-            student = supabase.table('students')\
-                .select('*')\
-                .eq('id', student_id)\
-                .execute()
+        # 2. Get form inputs (match 'name' in HTML exactly)
+        student_id = request.form.get('student_ID', '').strip()
+        passcode   = request.form.get('passcode',  '').strip()
+
+        # 3. Validate inputs
+        if not student_id or not passcode:
+            flash("Please enter both Student ID and Passcode.", "error")
+            return redirect(url_for('student_login'))
+
+        try:
+            # Make sure we're comparing with an integer in the database
+            student_id_int = int(student_id)
             
-            # Check if student exists and password matches
-            if student.data and len(student.data) > 0:
-                # Store student ID in session for future requests
-                session['student_id'] = student_id
-                return redirect(url_for('student_equipment', student_id=student_id))
-            else:
-                return "Invalid student ID or passcode", 400
-        else:
-            return "Please enter both Student ID and Passcode.", 400
+            # 4. Verify student exists in Supabase
+            resp = supabase.table('students') \
+                .select('*') \
+                .eq('id', student_id_int) \
+                .execute()
 
-    return render_template('student-alogin.html') 
+            if resp.error or not resp.data:
+                flash("Invalid Student ID or Passcode.", "error")
+                return redirect(url_for('student_login'))
+
+            # 5. Set session and redirect - store as string for consistency
+            session['student_id'] = student_id
+            return redirect(url_for('student_equipment'))
+            
+        except ValueError:
+            flash("Student ID must be a number.", "error")
+            return redirect(url_for('student_login'))
+
+    # GET: show login page (with embedded registration modal)
+    return render_template('student-alogin.html')
+
+
+@app.route('/register', methods=['POST'])
+def register():
+    try:
+
+        data = request.get_json()
+        student_id = data.get('id')
+        name = data.get('name')
+        section = data.get('section')
+
+        if not student_id or not name or not section:
+            return jsonify(success=False, message="Missing fields"), 400
+
+        response = supabase.table("students").insert({
+            "id": int(student_id),  
+            "name": name,
+            "section": section
+        }).execute()  
+
+        if response.error:
+            return jsonify(success=False, message=str(response.error)), 400
+        return jsonify(success=True, message="Student registered successfully"), 200
+
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 500
 
 
 @app.route('/professor-login', methods=['GET', 'POST'])
@@ -81,26 +128,21 @@ def admin_login():
 
 @app.route('/student-equipment')
 def student_equipment():
-    # Get student ID from session or query parameter
-    student_id = session.get('student_id') or request.args.get('student_id')
-    
+    student_id = session.get('student_id')
     if not student_id:
         return redirect(url_for('student_login'))
 
-    inventory = supabase.table('inventory')\
-        .select('*')\
-        .execute()\
-        .data
+    # Fetch all inventory if no student_id column exists
+    inventory = supabase.table('inventory') \
+        .select('*') \
+        .execute().data
 
-    notifications = (
-        supabase
-          .table('borrowed_requests')
-          .select('*, borrowed_items(*)')
-          .order('date_filed', desc=True)
-          .limit(10)
-          .execute()
-          .data
-    )
+    notifications = supabase.table('borrowed_requests') \
+        .select('*, borrowed_items(*)') \
+        .eq('student_id', int(student_id)) \
+        .order('date_filed', desc=True) \
+        .limit(10) \
+        .execute().data
 
     return render_template(
         'student-equipments.html',
@@ -108,6 +150,7 @@ def student_equipment():
         notifications=notifications,
         student_id=student_id
     )
+
 
 
 @app.route('/submit-borrow-request', methods=['POST'])
@@ -155,26 +198,52 @@ def submit_borrow_request():
 
 @app.route('/student-progress')
 def student_progress():
-    # Get student ID from session or query parameter
-    student_id = session.get('student_id') or request.args.get('student_id')
-    
+    # Get the student_id from the session
+    student_id = session.get('student_id')
     if not student_id:
+        # If no student_id in session, redirect to login
         return redirect(url_for('student_login'))
     
+    # Verify the student exists in database
+    try:
+        student_id_int = int(student_id)
+        student = supabase.table('students') \
+            .select('*') \
+            .eq('id', student_id_int) \
+            .execute()
+        
+        if not student.data:
+            # If student not found, clear session and redirect to login
+            session.clear()
+            return redirect(url_for('student_login'))
+            
+    except Exception as e:
+        # In case of error, log it and redirect
+        print(f"Error verifying student: {str(e)}")
+        session.clear()
+        return redirect(url_for('student_login'))
+    
+    # If all is good, render the progress page with the student_id
     return render_template('student-progressreport.html', student_id=student_id)
+
 
 @app.route('/api/student-requests/<student_id>')
 def get_student_requests(student_id):
     """API endpoint to fetch requests for a specific student"""
     try:
+        # Convert student_id to integer for proper comparison with database
+        student_id_int = int(student_id)
+        
         # Query requests for the specific student
         requests = supabase.table('borrowed_requests')\
             .select('*')\
-            .eq('student_id', student_id)\
+            .eq('student_id', student_id_int)\
             .order('date_filed', desc=True)\
             .execute()
         
         return jsonify(requests.data)
+    except ValueError:
+        return jsonify({"error": "Invalid student ID format"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
