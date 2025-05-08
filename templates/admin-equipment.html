@@ -21,8 +21,9 @@
         }
         .dashboard-container {
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
         }
+
         .sidebar {
             width: 250px;
             background-color: #002147;
@@ -64,7 +65,10 @@
         .main-content {
             flex-grow: 1;
             padding: 20px;
+            overflow-y: auto;
+            min-height: 0;
         }
+
         .greeting {
             background-color: #002147;
             color: #fff;
@@ -96,6 +100,25 @@
         }
         .equipment-item button:hover {
             background-color: #EAAA00;
+        }
+           #equipment-list {
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 10px; 
+                list-style-type: none; 
+                padding: 0; 
+                margin: 0; 
+        }
+
+
+          #equipment-list li {
+              background-color: #fff;
+              padding: 10px;
+              text-align: center;
+              border-radius: 8px;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              width: 200px; 
+              flex-shrink: 0; 
         }
     </style>
 </head>
@@ -146,76 +169,92 @@
 
     
     <script>
-        let equipmentList = JSON.parse(localStorage.getItem('equipmentList')) || [];
-
-        function addEquipment() {
-            const id = document.getElementById('new-equipment-id').value;
-            const name = document.getElementById('new-equipment-name').value;
-            const quantity = parseInt(document.getElementById('new-equipment-quantity').value);
-
-            if (id && name && !isNaN(quantity) && quantity >= 0) {
-                // Check if equipment already exists
-                const existingIndex = equipmentList.findIndex(item => item.id === id);
-                if (existingIndex !== -1) {
-                    // If it exists, increase the quantity
-                    equipmentList[existingIndex].quantity += quantity;
-                } else {
-                    // Otherwise, add a new equipment item
-                    equipmentList.push({ id, name, quantity });
-                }
-                saveAndUpdate();
-                alert('Equipment added successfully!');
-            } else {
+        async function fetchEquipment() {
+            try {
+                const response = await fetch('/api/equipment');
+                if (!response.ok) throw new Error('Failed to fetch equipment');
+                const data = await response.json();
+                updateEquipmentList(data);
+            } catch (error) {
+                alert('Error fetching equipment: ' + error.message);
+            }
+        }
+    
+        async function addEquipment() {
+            const id = document.getElementById('new-equipment-id').value.trim();
+            const name = document.getElementById('new-equipment-name').value.trim();
+            const quantity = parseInt(document.getElementById('new-equipment-quantity').value, 10);
+    
+            if (!id || !name || isNaN(quantity) || quantity < 0) {
                 alert('Please fill in all fields correctly, especially the quantity.');
+                return;
+            }
+    
+            try {
+                const response = await fetch('/api/equipment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: parseInt(id, 10), name, quantity })
+                });
+    
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to add equipment');
+                }
+    
+                alert('Equipment added successfully!');
+                fetchEquipment();
+            } catch (error) {
+                alert('Error adding equipment: ' + error.message);
             }
         }
-
-        function removeEquipment() {
-            const id = document.getElementById('remove-equipment-id').value;
-            if (id) {
-                // Filter out the equipment with the given ID
-                equipmentList = equipmentList.filter(equipment => equipment.id !== id);
-                saveAndUpdate();
-                alert('Equipment removed successfully!');
-            } else {
+    
+        async function removeEquipment() {
+            const id = document.getElementById('remove-equipment-id').value.trim();
+    
+            if (!id) {
                 alert('Please enter an equipment ID to remove.');
+                return;
+            }
+    
+            try {
+                const response = await fetch(`/api/equipment/${id}`, {
+                    method: 'DELETE'
+                });
+    
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to remove equipment');
+                }
+    
+                alert('Equipment removed successfully!');
+                fetchEquipment();
+            } catch (error) {
+                alert('Error removing equipment: ' + error.message);
             }
         }
-
-        // Function to update the equipment list UI
-        function updateEquipmentList() {
+    
+        function updateEquipmentList(equipmentList) {
             const equipmentListElement = document.getElementById('equipment-list');
             equipmentListElement.innerHTML = '';
-
-            // Sort the equipment list by ID
-            equipmentList.sort((a, b) => {
-                if (!a.id || !b.id) return 0; // If either ID is missing, do not sort
-                return a.id.localeCompare(b.id);
-            });
-
-            // Create list items for each equipment
+    
+            equipmentList.sort((a, b) => a.id - b.id);
+    
             equipmentList.forEach(equipment => {
                 const li = document.createElement('li');
                 li.textContent = `ID: ${equipment.id} - ${equipment.name} - Quantity: ${equipment.quantity}`;
                 equipmentListElement.appendChild(li);
             });
         }
-
-        // Function to save the equipment list to localStorage and update the UI
-        function saveAndUpdate() {
-            localStorage.setItem('equipmentList', JSON.stringify(equipmentList));
-            updateEquipmentList();
-        }
-
+    
         function logout() {
             alert("Logging out...");
             window.location.href = "{{ url_for('login') }}";
         }
-
-        // Initialize display when the page loads
-        document.addEventListener('DOMContentLoaded', updateEquipmentList);
-        
+    
+        document.addEventListener('DOMContentLoaded', fetchEquipment);
     </script>
+    
 
 </body>
 </html>

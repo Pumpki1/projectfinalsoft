@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,124 +137,115 @@ body {
 </style>
 </head>
 <body>
-
-<div class="header-bar">
-    Admin Reservation Management
-</div>
-
+<div class="header-bar">Admin Reservation Management</div>
 <div class="dashboard-container">
-    <div class="sidebar">
-        <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
-        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('admin_equipment') }}">Equipments</a>
-        <a href="{{ url_for('admin_reservation') }}">Reservations</a>
-        <button class="logout-button" onclick="logout()">Log Out</button>
-    </div>
+  <div class="sidebar">
+    <img src="{{ url_for('static', filename='JRU.jpg') }}" alt="University Logo">
+    <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('admin_equipment') }}">Equipments</a>
+    <a href="{{ url_for('admin_reservation') }}">Reservations</a>
+    <button class="logout-button" onclick="logout()">Log Out</button>
+  </div>
+  <div class="main-content">
+    <h3>Reservation Requests</h3>
+    <div id="reservation-requests"></div>
 
-    <div class="main-content">
-        <h3>Reservation Requests</h3>
-        <div id="reservation-requests"></div>
-
-        <h3>Reservation Progress</h3>
-        <div id="reservation-progress"></div>
-    </div>
+    <h3>Reservation Progress</h3>
+    <div id="reservation-progress"></div>
+  </div>
 </div>
-
 <script>
-let reservationRequests = [
-    { id: 1, studentName: "John Doe", equipment: "Power Supply", quantity: 2, status: "Pending", progressStatus: null },
-    { id: 2, studentName: "Jane Smith", equipment: "Resistors", quantity: 5, status: "Pending", progressStatus: null }
-];
+async function loadReservations() {
+  const res = await fetch('/fetch-admin-requests');
+  const list = await res.json();
+  const container = document.getElementById('reservation-requests');
+  container.innerHTML = '';
+  list.forEach(r => {
+    // Only display requests where admin_status is pending or null
+    if (!r.status_admin || r.status_admin === 'pending') {
+      const div = document.createElement('div');
+      div.className = 'request-item';
+      div.innerHTML = `
+        <p><strong>Request #${r.id}</strong> — ${r.student_name} (${r.faculty_name})</p>
+        <p>Lab: ${r.laboratory} | Subject: ${r.subject}/${r.section}</p>
+        <p>Filed: ${r.date_filed} | Needed: ${r.date_needed}</p>
+        <p>Items:</p>
+        <ul>${r.items.map(i => `<li>${i.item_name} × ${i.quantity}</li>`).join('')}</ul>
+        <p>Status: <span class="status-badge ${r.status_admin=='approved'?'badge-approved':r.status_admin=='declined'?'badge-declined':' '}">${r.status_admin || 'Pending'}</span></p>
+        <button onclick="adminAction(${r.id},'approve')">Approve</button>
+        <button onclick="adminAction(${r.id},'decline')">Decline</button>
+      `;
+      container.appendChild(div);
+    }
+  });
+}
 
-function renderRequests() {
-    const reservationContainer = document.getElementById('reservation-requests');
-    reservationContainer.innerHTML = '';
-    reservationRequests.forEach(request => {
-        if (request.status === "Pending") {
-            const div = document.createElement('div');
-            div.classList.add('request-item');
-            div.innerHTML = `
-                <p><strong>Student:</strong> ${request.studentName}</p>
-                <p><strong>Equipment:</strong> ${request.equipment} (Qty: ${request.quantity})</p>
-                <p><strong>Status:</strong> ${request.status}</p>
-                <button onclick="approveRequest(${request.id})">Approve</button>
-                <button onclick="rejectRequest(${request.id})">Reject</button>
-            `;
-            reservationContainer.appendChild(div);
-        }
+async function loadProgress() {
+  const res = await fetch('/fetch-admin-progress');
+  const list = await res.json();
+  const container = document.getElementById('reservation-progress');
+  container.innerHTML = '';
+  list.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'request-item';
+    div.innerHTML = `
+      <p><strong>Request #${item.request_id}</strong> — ${item.student_name}</p>
+      <p>Lab: ${item.laboratory} | Subject: ${item.subject}/${item.section}</p>
+      <p>Filed: ${item.date_filed} | Needed: ${item.date_needed}</p>
+      <p>Overall Status: <span class="status-badge ${item.overall_status=='in'?'status-in':item.overall_status=='out'?'status-out':item.overall_status=='returned'?'status-returned':' '}">${item.overall_status}</span></p>
+      <div id="items-${item.request_id}"></div>
+    `;
+    container.appendChild(div);
+
+    // Fetch and render individual items for this request
+    fetch(`/fetch-request-items/${item.request_id}`)
+      .then(response => response.json())
+      .then(items => {
+        const itemsContainer = document.getElementById(`items-${item.request_id}`);
+        items.forEach(i => {
+          const itemDiv = document.createElement('div');
+          itemDiv.innerHTML = `
+            <p>${i.item_name} (Qty: ${i.quantity}) - Status: ${i.status}</p>
+            <button onclick="updateItemStatus(${i.id},'in')">Mark In</button>
+            <button onclick="updateItemStatus(${i.id},'out')">Mark Out</button>
+            <button onclick="updateItemStatus(${i.id},'returned')">Mark Returned</button>
+          `;
+          itemsContainer.appendChild(itemDiv);
+        });
+      });
+  });
+}
+
+async function adminAction(id, action) {
+  await fetch(`/admin-action/${id}/${action}`, { method: 'POST' });
+  loadReservations(); 
+  setInterval(() => {
+    location.reload();
+  }, 5000); 
+}
+
+async function updateItemStatus(id, status) {
+  try {
+    // Send the status update request
+    const response = await fetch(`/admin-item-action/${id}/${status}`, { 
+      method: 'POST' 
     });
-
-    renderProgress();
-}
-
-function renderProgress() {
-    const progressContainer = document.getElementById('reservation-progress');
-    progressContainer.innerHTML = '';
-    reservationRequests.forEach(request => {
-        if (request.status === "Approved") {
-            const div = document.createElement('div');
-            div.classList.add('request-item');
-            if (request.progressStatus === "Returned") div.classList.add("returned");
-
-            let badgeClass = "";
-            if (request.progressStatus === "In") badgeClass = "status-in";
-            else if (request.progressStatus === "Out") badgeClass = "status-out";
-            else if (request.progressStatus === "Returned") badgeClass = "status-returned";
-
-            let actionButton = '';
-            if (request.progressStatus === "In") {
-                actionButton = `<button onclick="updateProgress(${request.id}, 'Out')">Mark as Out</button>`;
-            } else if (request.progressStatus === "Out") {
-                actionButton = `<button onclick="updateProgress(${request.id}, 'Returned')">Mark as Returned</button>`;
-            }
-
-            div.innerHTML = `
-                <p><strong>Student:</strong> ${request.studentName}</p>
-                <p><strong>Equipment:</strong> ${request.equipment} (Qty: ${request.quantity})</p>
-                <p><strong>Progress Status:</strong> <span class="status-badge ${badgeClass}">${request.progressStatus}</span></p>
-                ${actionButton}
-            `;
-            progressContainer.appendChild(div);
-        }
-    });
-}
-
-function approveRequest(id) {
-    const request = reservationRequests.find(req => req.id === id);
-    if (request) {
-        request.status = "Approved";
-        request.progressStatus = "In";
-        alert(`${request.studentName}'s request has been approved and is now marked as In.`);
-        renderRequests();
+    
+    if (!response.ok) {
+      throw new Error('Failed to update status');
     }
+    
+    
+    // Show success message (optional)
+    alert(`Item status changed to ${status} successfully`);
+  } catch (error) {
+    console.error('Error updating item status:', error);
+    alert('Failed to update item status. Please try again.');
+  }
 }
 
-function rejectRequest(id) {
-    const request = reservationRequests.find(req => req.id === id);
-    if (request) {
-        request.status = "Rejected";
-        alert(`${request.studentName}'s request has been rejected.`);
-        renderRequests();
-    }
-}
-
-function updateProgress(id, newStatus) {
-    const request = reservationRequests.find(req => req.id === id);
-    if (request) {
-        request.progressStatus = newStatus;
-        alert(`${request.studentName}'s reservation status updated to "${newStatus}".`);
-        renderRequests();
-    }
-}
-
-        function logout() {
-            alert("Logging out...");
-            window.location.href = "{{ url_for('login') }}";
-        }
-
-
-renderRequests();
+  function logout() { window.location.href = "{{ url_for('login') }}"; }
+  window.onload = () => { loadReservations(); loadProgress(); };
 </script>
-
 </body>
 </html>

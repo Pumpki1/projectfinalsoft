@@ -21,7 +21,7 @@
         }
         .dashboard-container {
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
         }
         .sidebar {
             width: 250px;
@@ -64,7 +64,8 @@
         .main-content {
             flex-grow: 1;
             padding: 20px;
-            display: flex;
+            overflow-y: auto;
+            min-height: 0;
         }
         .main-left {
             flex-grow: 1;
@@ -161,7 +162,15 @@
                 <div id="equipments-section">
                     <h3>Available Equipment</h3>
                     <div class="equipments-list" id="equipments-list">
-                        <!-- Equipment list will be dynamically populated here -->
+                        {% for equipment in equipment_list %}
+                            <div class="equipment-item">
+                                <p>Quantity: <span>{{ equipment['quantity'] }}</span></p>
+                                <img src="{{ url_for('static', filename=equipment['id'] ~ '.png') }}" alt="{{ equipment['name'] }}">
+                                <h4>{{ equipment['name'] }}</h4>
+                            </div>
+                        {% else %}
+                            <p>No equipment available.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -186,7 +195,9 @@
     <script>
         // Function to update the equipment list
         function updateEquipmentList() {
-            const equipmentList = JSON.parse(localStorage.getItem('equipmentList')) || [];
+    fetch('/api/equipment')  // Fetch data from the backend API (Flask)
+        .then(response => response.json())
+        .then(equipmentList => {
             const equipmentListElement = document.getElementById('equipments-list');
             equipmentListElement.innerHTML = ''; // Clear the existing list
 
@@ -203,10 +214,15 @@
                 equipmentItem.innerHTML = equipmentHTML;
                 equipmentListElement.appendChild(equipmentItem);
             });
-        }
+        })
+        .catch(error => {
+            console.error('Error fetching equipment data:', error);
+        });
+}
 
-        // Call the function to update the list when the page loads
-        document.addEventListener('DOMContentLoaded', updateEquipmentList);
+// Call the function to update the list when the page loads
+document.addEventListener('DOMContentLoaded', updateEquipmentList);
+
 
         function logout() {
             alert("Logging out...");
