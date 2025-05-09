@@ -103,13 +103,16 @@
         
         <h3>Student Login - Jose Rizal University</h3>
   <!-- Existing login form -->
-  <form id="login-form">
-    <label for="login-username">Username:</label>
-    <input type="text" id="login-username" name="username" required>
-    <label for="login-password">Password:</label>
-    <input type="password" id="login-password" name="password" required>
+  <form action="{{ url_for('student_login') }}" method="POST">
+    <label for="login-username">Student ID:</label>
+    <input type="text" id="login-username" name="student_ID" required>
+  
+    <label for="login-password">Passcode:</label>
+    <input type="password" id="login-password" name="passcode" required>
+  
     <button type="submit">Login</button>
   </form>
+  
   
   <!-- Register button that opens the modal -->
   <button id="open-register-btn">Register</button>

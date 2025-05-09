@@ -33,42 +33,36 @@ def logout():
 @app.route('/student-login', methods=['GET', 'POST'])
 def student_login():
     if request.method == 'POST':
-        # 1. Clear previous session data
         session.clear()
-
-        # 2. Get form inputs (match 'name' in HTML exactly)
         student_id = request.form.get('student_ID', '').strip()
-        passcode   = request.form.get('passcode',  '').strip()
-
-        # 3. Validate inputs
+        
         if not student_id or not passcode:
             flash("Please enter both Student ID and Passcode.", "error")
             return redirect(url_for('student_login'))
 
         try:
-            # Make sure we're comparing with an integer in the database
-            student_id_int = int(student_id)
-            
-            # 4. Verify student exists in Supabase
-            resp = supabase.table('students') \
-                .select('*') \
-                .eq('id', student_id_int) \
-                .execute()
-
-            if resp.error or not resp.data:
-                flash("Invalid Student ID or Passcode.", "error")
-                return redirect(url_for('student_login'))
-
-            # 5. Set session and redirect - store as string for consistency
-            session['student_id'] = student_id
-            return redirect(url_for('student_equipment'))
-            
+            sid = int(student_id)
         except ValueError:
             flash("Student ID must be a number.", "error")
             return redirect(url_for('student_login'))
 
-    # GET: show login page (with embedded registration modal)
+        # Check both ID and passcode in one go:
+        resp = supabase.table('students') \
+            .select('*') \
+            .eq('id', sid) \
+            .eq('passcode', passcode) \
+            .single() \
+            .execute()
+
+        if resp.error or not resp.data:
+            flash("Invalid Student ID or Passcode.", "error")
+            return redirect(url_for('student_login'))
+
+        session['student_id'] = sid
+        return redirect(url_for('student_equipment'))
+
     return render_template('student-alogin.html')
+
 
 
 @app.route('/register', methods=['POST'])
